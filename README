@@ -1,0 +1,59 @@
+= Stats package =
+
+The Stats package implements a Stats class template to efficiently
+stores values with an associated timestamp, and support getting the
+p-percentile value of the serie.
+All the values can be iterated upon in timestamp order, keeping insertion
+order.
+
+Insertion is done in O(1) and requires O(N).
+Going through all the values is done in O(N).
+Getting the percentile is done in O(2*N) on average.
+
+Directory structure:
+ include/ : contains the Stats template include and other utils headers
+ examples/: contains a simple example reading from stdin and writing to stdout
+ tests/   : contains the unit tests for Stats
+
+= Usage =
+
+You need to include "Stats.hpp" into your project.
+It is a C++11 header, so it should be easy to drop in any project.
+The only dependency is STL and libstc++.
+
+You can then initialize a new Stats class:
+    fr_benou::Stats<> stats;
+You can customize the storage type (default double), the timeout (default 60s)
+and the way you get timestamps (default time(3p)):
+    fr_benou::Stats stats<float,30>; // float values, 30s timeout
+
+Once you have the stats object you can add new values:
+    stats.add(0.5);
+
+To get the 70-percentile:
+    double 70p = stats.get_p70();
+
+To get all entries in timestamps order, you can use an iterator:
+    for (auto it = stats.begin(); it != stats.end(); ++it) { ...
+
+= Discussion about the implementation =
+
+I had to make several assumptions during the design (some of which I solved
+by templating to allow customization - eg. storage format).
+The main one was to decide which efficiency for which function.
+I suppose that add() must be as fast as we can: a production environment log
+counters to give information about its health but by doing so we shoud not
+degrade its performances.
+
+So I wanted to use O(1) complexity for add(), including the memory management.
+I could have keep track of the 70-percentile during inserts (eg. using 2 heaps)
+but It would have renders insertion much slower (especially with timeout
+managements, it leads to at least O(N+log(N)) I believe).
+A bucket structure with vectors guarantees an easy and fast recycling of entries
+with O(1) complexity.
+
+As I do not keep track of the 70-percentile during insertion I need to build it on
+demand. C++ quickselect gives us a simple O(N+N^2) worst case / O(2*N) average
+algorithm.
+One interesting side effect of not keeping track of 70-percentile during insertion
+is that I can compute any percentile.

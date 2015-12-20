@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "Check std::out_of_range() throwing..."
+MYDIR=$(dirname $0)
+$MYDIR/../examples/main < /dev/null
+[ $? -eq 134 ] && exit 0
+exit 1

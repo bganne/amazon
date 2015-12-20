@@ -1,0 +1,9 @@
+#!/bin/bash
+echo "Check memory leaks/access bugs..."
+MYDIR=$(dirname $0)
+set -o pipefail
+{
+    for ((i=0;i<1000;i++)); do
+        echo $i
+    done
+} | valgrind --leak-check=full $MYDIR/../examples/main > /dev/null
